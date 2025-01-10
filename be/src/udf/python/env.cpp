@@ -100,7 +100,7 @@ Status PyWorkerManager::_fork_py_worker(std::unique_ptr<PyWorker>* child_process
     pid_t cpid = fork();
     if (cpid == -1) {
         return Status::InternalError(fmt::format("fork worker error:{}", std::strerror(errno)));
-    } else if (cpid == 0) {
+    } else if (cpid == 0) {    // child process
         dup2(pipefd[1], STDOUT_FILENO);
         if (config::report_python_worker_error) {
             dup2(pipefd[1], STDERR_FILENO);
@@ -133,7 +133,7 @@ Status PyWorkerManager::_fork_py_worker(std::unique_ptr<PyWorker>* child_process
             exit(-1);
         }
 
-    } else {
+    } else {    // parent process
         close(pipefd[1]);
         butil::fd_guard guard(pipefd[0]);
         *child_process = std::make_unique<PyWorker>(cpid);
