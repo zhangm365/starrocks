@@ -243,9 +243,12 @@ StatusOr<std::shared_ptr<JavaUDFContext>> JavaFunctionCallExpr::_build_udf_func_
     ASSIGN_OR_RETURN(auto update_stub_clazz, desc->udf_classloader->genCallStub(stub_clazz, udf_clazz, update_method,
                                                                                 ClassLoader::BATCH_EVALUATE));
     LOG(INFO) << "zhangmao2024 in func: " << __func__ << " , update_stub_clazz.clazz() = " << update_stub_clazz.clazz();
+
     ASSIGN_OR_RETURN(auto method, desc->analyzer->get_method_object(update_stub_clazz.clazz(), stub_method_name));
 
+
     LOG(INFO) << "zhangmao2024 in func: " << __func__ << " , method = " << method;
+
     desc->call_stub = std::make_unique<BatchEvaluateStub>(desc->udf_handle.handle(), std::move(update_stub_clazz),
                                                           JavaGlobalRef(std::move(method)));
 
