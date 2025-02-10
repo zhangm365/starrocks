@@ -45,12 +45,21 @@ struct UDFFunctionCallHelper {
 
     // Now we don't support logical type function
     StatusOr<ColumnPtr> call(FunctionContext* ctx, Columns& columns, size_t size) {
+
+        LOG(INFO) << fmt::format(
+            "zhangmao2024 in func: {}, size = {}, columns.size() = {}",
+            __func__, size, columns.size()
+        );
+
         auto& helper = JVMFunctionHelper::getInstance();
         JNIEnv* env = helper.getEnv();
         std::vector<DirectByteBuffer> buffers;
         int num_cols = ctx->get_num_args();
         std::vector<const Column*> input_cols;
-
+        LOG(INFO) << fmt::format(
+                "zhangmao2024 in func: {}, num_cols = {}",
+                __func__, num_cols
+        );
         for (auto& column : columns) {
             if (column->only_null()) {
                 // we will handle NULL later
@@ -72,6 +81,8 @@ struct UDFFunctionCallHelper {
                                                                 &input_col_objs);
         RETURN_IF_UNLIKELY(!st.ok(), ColumnHelper::create_const_null_column(size));
 
+        LOG(INFO) << "zhangmao2024 in func: " << __func__ << ", input_cols.data() = " << input_cols.data() << ", input_col_objs.data() = " << input_col_objs.data();
+
         // call UDF method
         ASSIGN_OR_RETURN(auto res, helper.batch_call(fn_desc->call_stub.get(), input_col_objs.data(),
                                                      input_col_objs.size(), size));
@@ -83,6 +94,12 @@ struct UDFFunctionCallHelper {
     }
 
     ColumnPtr get_boxed_result(FunctionContext* ctx, jobject result, size_t num_rows) {
+
+        LOG(INFO) << fmt::format(
+                "zhangmao2024 in func: {}, num_rows = {}",
+                __func__, num_rows
+        );
+
         if (result == nullptr) {
             return ColumnHelper::create_const_null_column(num_rows);
         }
@@ -99,10 +116,24 @@ struct UDFFunctionCallHelper {
 JavaFunctionCallExpr::JavaFunctionCallExpr(const TExprNode& node) : Expr(node) {}
 
 StatusOr<ColumnPtr> JavaFunctionCallExpr::evaluate_checked(ExprContext* context, Chunk* ptr) {
-    Columns columns(children().size());
 
+    static int depth = 0;
+    LOG(INFO) << fmt::format(
+            "zhangmao2024 in func: {}, children().size() = {}, (ptr != nullptr) = {}, _children.size() = {}, depth = {}",
+            __func__, children().size(), ptr != nullptr, _children.size(), depth
+    );
+    depth++;
+
+    Columns columns(children().size());
     for (int i = 0; i < _children.size(); ++i) {
+        LOG(INFO) << fmt::format(
+                "zhangmao2024 in func: {}, i = {}, _children.size() = {}",
+                __func__, i, _children.size()
+        );
         ASSIGN_OR_RETURN(columns[i], _children[i]->evaluate_checked(context, ptr));
+        std::string debug_info = columns[i].get()->debug_string();
+        LOG(INFO) << "Before Column debug string: " << debug_info;
+
     }
     StatusOr<ColumnPtr> res;
     auto call_udf = [&]() {
@@ -110,6 +141,8 @@ StatusOr<ColumnPtr> JavaFunctionCallExpr::evaluate_checked(ExprContext* context,
         return Status::OK();
     };
     (void)call_function_in_pthread(_runtime_state, call_udf)->get_future().get();
+    std::string debug_info = res.get()->debug_string();
+    LOG(INFO) << "After Column res debug string: " << debug_info;
     return res;
 }
 
@@ -161,12 +194,18 @@ bool JavaFunctionCallExpr::is_constant() const {
 
 StatusOr<std::shared_ptr<JavaUDFContext>> JavaFunctionCallExpr::_build_udf_func_desc(
         FunctionContext::FunctionStateScope scope, const std::string& libpath) {
+
+    LOG(INFO) << fmt::format(
+        "zhangmao2024 in func: {}, libpath: {}",
+        __func__, libpath
+    );
+
     auto desc = std::make_shared<JavaUDFContext>();
     // init class loader and analyzer
     desc->udf_classloader = std::make_unique<ClassLoader>(std::move(libpath));
     RETURN_IF_ERROR(desc->udf_classloader->init());
     desc->analyzer = std::make_unique<ClassAnalyzer>();
-
+    LOG(INFO) << "zhangmao2024 in func: " << __func__ << ",  _fn.scalar_fn.symbol = " << _fn.scalar_fn.symbol;
     ASSIGN_OR_RETURN(desc->udf_class, desc->udf_classloader->getClass(_fn.scalar_fn.symbol));
 
     auto add_method = [&](const std::string& name, std::unique_ptr<JavaMethodDescriptor>* res) {
@@ -192,6 +231,7 @@ StatusOr<std::shared_ptr<JavaUDFContext>> JavaFunctionCallExpr::_build_udf_func_
     // RETURN_IF_ERROR(add_method("method_close", &desc->close));
     RETURN_IF_ERROR(add_method("evaluate", &desc->evaluate));
 
+    LOG(INFO) << "zhangmao2024 in func: " << __func__ << ",  desc->evaluate->name = " << desc->evaluate->name << ", desc->evaluate.signature = " <<  desc->evaluate->signature;
     // create UDF function instance
     ASSIGN_OR_RETURN(desc->udf_handle, desc->udf_class.newInstance());
     // BatchEvaluateStub
@@ -199,10 +239,13 @@ StatusOr<std::shared_ptr<JavaUDFContext>> JavaFunctionCallExpr::_build_udf_func_
     auto* stub_method_name = BatchEvaluateStub::batch_evaluate_method_name;
     auto udf_clazz = desc->udf_class.clazz();
     auto update_method = desc->evaluate->method.handle();
-
+    LOG(INFO) << "zhangmao2024 in func: " << __func__ << " , udf_clazz = "  << udf_clazz << " , update_method = "  << update_method;
     ASSIGN_OR_RETURN(auto update_stub_clazz, desc->udf_classloader->genCallStub(stub_clazz, udf_clazz, update_method,
                                                                                 ClassLoader::BATCH_EVALUATE));
+    LOG(INFO) << "zhangmao2024 in func: " << __func__ << " , update_stub_clazz.clazz() = " << update_stub_clazz.clazz();
     ASSIGN_OR_RETURN(auto method, desc->analyzer->get_method_object(update_stub_clazz.clazz(), stub_method_name));
+
+    LOG(INFO) << "zhangmao2024 in func: " << __func__ << " , method = " << method;
     desc->call_stub = std::make_unique<BatchEvaluateStub>(desc->udf_handle.handle(), std::move(update_stub_clazz),
                                                           JavaGlobalRef(std::move(method)));
 
@@ -218,6 +261,13 @@ StatusOr<std::shared_ptr<JavaUDFContext>> JavaFunctionCallExpr::_build_udf_func_
 
 Status JavaFunctionCallExpr::open(RuntimeState* state, ExprContext* context,
                                   FunctionContext::FunctionStateScope scope) {
+
+
+    LOG(INFO) << fmt::format(
+        "zhangmao2024 in func: {}, FunctionContext::FunctionStateScope: {}",
+        __func__, scope
+    );
+
     // init parent open
     RETURN_IF_ERROR(Expr::open(state, context, scope));
     RETURN_IF_ERROR(detect_java_runtime());
@@ -243,15 +293,27 @@ Status JavaFunctionCallExpr::open(RuntimeState* state, ExprContext* context,
         };
 
         auto function_cache = UserFunctionCache::instance();
+
+        LOG(INFO) << fmt::format(
+            "_fn.__isset.isolated && !_fn.isolated = {}",
+            _fn.__isset.isolated && !_fn.isolated
+        );
+
         if (_fn.__isset.isolated && !_fn.isolated) {
             ASSIGN_OR_RETURN(auto desc, function_cache->load_cacheable_java_udf(_fn.fid, _fn.hdfs_location,
                                                                                 _fn.checksum, get_func_desc));
             _func_desc = std::any_cast<std::shared_ptr<JavaUDFContext>>(desc);
         } else {
             std::string libpath;
+            LOG(INFO) << fmt::format(
+                    "_fn.fid({}), _fn.hdfs_location({}), _fn.checksum({})",
+                    _fn.fid, _fn.hdfs_location, _fn.checksum
+            );
             RETURN_IF_ERROR(function_cache->get_libpath(_fn.fid, _fn.hdfs_location, _fn.checksum, &libpath));
             ASSIGN_OR_RETURN(auto desc, get_func_desc(libpath));
             _func_desc = std::any_cast<std::shared_ptr<JavaUDFContext>>(desc);
+            LOG(INFO) << "zhangmao2024 in func: " << __func__  << "Type of 'this->_func_desc': " << typeid(this->_func_desc.get()).name();
+
         }
 
         _call_helper = std::make_shared<UDFFunctionCallHelper>();

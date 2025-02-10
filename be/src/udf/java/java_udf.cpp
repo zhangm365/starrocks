@@ -356,6 +356,12 @@ jobject JVMFunctionHelper::int_batch_call(FunctionContext* ctx, jobject callers,
 
 void JVMFunctionHelper::get_result_from_boxed_array(FunctionContext* ctx, int type, Column* col, jobject jcolumn,
                                                     int rows) {
+
+    LOG(INFO) << fmt::format(
+            "zhangmao2024 in func: {}, rows = {}, type = {}",
+            __func__, rows, type
+    );
+
     col->resize(rows);
     _env->CallStaticVoidMethod(_udf_helper_class, _get_boxed_result, type, rows, jcolumn,
                                reinterpret_cast<int64_t>(col));
@@ -540,6 +546,11 @@ Status ClassLoader::init() {
         return Status::InternalError("Init JNIEnv fail");
     }
     std::string name = JVMFunctionHelper::to_jni_class_name(CLASS_LOADER_NAME);
+    LOG(INFO) << fmt::format(
+        "zhangmao2024 in func: {}, name: {}",
+        __func__, name
+    );
+
     jclass clazz = env->FindClass(name.c_str());
     LOCAL_REF_GUARD(clazz);
     _clazz = env->NewGlobalRef(clazz);
@@ -556,6 +567,7 @@ Status ClassLoader::init() {
     // create class loader instance
     jstring jstr = env->NewStringUTF(_path.c_str());
     LOCAL_REF_GUARD(jstr);
+    LOG(INFO) << "jstr: {}" << jstr << ", _path.c_str() = " << _path.c_str();
 
     auto handle = env->NewObject(clazz, udf_loader_contructor, jstr);
     LOCAL_REF_GUARD(handle);
@@ -854,6 +866,9 @@ void AggBatchCallStub::batch_update_single(int num_rows, jobject state, jobject*
 }
 
 StatusOr<jobject> BatchEvaluateStub::batch_evaluate(int num_rows, jobject* input, int cols) {
+
+    LOG(INFO) << "zhangmao2024 in func: " << __func__ << ", num_rows = " << num_rows << ", cols = " << cols;
+
     jvalue jni_inputs[2 + cols];
     jni_inputs[0].i = num_rows;
     jni_inputs[1].l = _caller;

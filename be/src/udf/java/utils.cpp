@@ -29,6 +29,11 @@
 
 namespace starrocks {
 PromiseStatusPtr call_function_in_pthread(RuntimeState* state, const std::function<Status()>& func) {
+
+    LOG(INFO) << fmt::format(
+            "zhangmao2024 in func: {}, bthread_self(): {}",
+            __func__, bthread_self()
+    );
     PromiseStatusPtr ms = std::make_unique<PromiseStatus>();
     if (bthread_self()) {
         state->exec_env()->udf_call_pool()->offer([promise = ms.get(), state, func]() {
