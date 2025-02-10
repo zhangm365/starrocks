@@ -42,6 +42,8 @@ struct ArrowCallStubCtx {
 ArrowFunctionCallExpr::ArrowFunctionCallExpr(const TExprNode& node) : Expr(node) {}
 
 StatusOr<ColumnPtr> ArrowFunctionCallExpr::evaluate_checked(ExprContext* context, Chunk* chunk) {
+
+    LOG(INFO) << "zhangmao = ArrowFunctionCallExpr::evaluate_checked" << ", children().size() = " << children().size();
     Columns columns(children().size());
     size_t num_rows = chunk != nullptr ? chunk->num_rows() : 1;
     for (int i = 0; i < _children.size(); ++i) {
@@ -53,14 +55,16 @@ StatusOr<ColumnPtr> ArrowFunctionCallExpr::evaluate_checked(ExprContext* context
     int32_t driver_id = CurrentThread::current().get_driver_id();
     FunctionContext* function_context = context->fn_context(_fn_context_index);
     UDFCallStub* stub = nullptr;
+    LOG(INFO) << "zhangmao = " << __func__ << ", driver_id = " << driver_id;
     _call_stub_ctx->inner_states.lazy_emplace_l(
             driver_id, [&](auto& value) { stub = value.get(); },
             [&](auto build) {
+                LOG(INFO) << "zhangmao = " << __func__ ;
                 auto value = _build_stub(driver_id, function_context);
                 stub = value.get();
                 build(driver_id, std::move(value));
             });
-
+    LOG(INFO) << "zhangmao = " << __func__ << ", type of stub = " << typeid(*stub).name();
     return stub->evaluate(columns, num_rows);
 }
 
@@ -85,6 +89,8 @@ Status ArrowFunctionCallExpr::prepare(RuntimeState* state, ExprContext* context)
 
 Status ArrowFunctionCallExpr::open(RuntimeState* state, ExprContext* context,
                                    FunctionContext::FunctionStateScope scope) {
+
+    LOG(INFO) << "zhangmao = ArrowFunctionCallExpr::open" << ", scope = " << scope;
     RETURN_IF_ERROR(Expr::open(state, context, scope));
     FunctionContext* fn_ctx = context->fn_context(_fn_context_index);
     Columns const_columns;
@@ -120,13 +126,16 @@ bool ArrowFunctionCallExpr::is_constant() const {
 std::unique_ptr<UDFCallStub> ArrowFunctionCallExpr::_build_stub(int32_t driver_id, FunctionContext* context) {
     auto binary_type = _fn.binary_type;
     if (binary_type == TFunctionBinaryType::PYTHON) {
-        PyFunctionDescriptor py_func_desc;
-        py_func_desc.symbol = _fn.scalar_fn.symbol;
-        py_func_desc.location = _lib_path;
-        py_func_desc.input_type = _fn.input_type;
-        py_func_desc.input_types = context->get_arg_types();
-        py_func_desc.return_type = context->get_return_type();
-        py_func_desc.content = _fn.content;
+        LOG(INFO) << "zhangmao = " << __func__ << ", driver_id = " << driver_id;
+        PyFunctionDescriptor py_func_desc(driver_id, _fn.scalar_fn.symbol, _lib_path, _fn.content,
+                                          _fn.input_type, context->get_return_type(), context->get_arg_types());
+//        py_func_desc.driver_id = driver_id;
+//        py_func_desc.symbol = _fn.scalar_fn.symbol;
+//        py_func_desc.location = _lib_path;
+//        py_func_desc.input_type = _fn.input_type;
+//        py_func_desc.input_types = context->get_arg_types();
+//        py_func_desc.return_type = context->get_return_type();
+//        py_func_desc.content = _fn.content;
         return build_py_call_stub(context, py_func_desc);
     }
     return create_error_call_stub(Status::NotFound(fmt::format("unsupported function type:{}", binary_type)));

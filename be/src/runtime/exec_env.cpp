@@ -317,6 +317,7 @@ ExecEnv::ExecEnv() = default;
 ExecEnv::~ExecEnv() = default;
 
 Status ExecEnv::init(const std::vector<StorePath>& store_paths, bool as_cn) {
+    LOG(INFO) << "zhangmao = " << __func__;
     _store_paths = store_paths;
     _external_scan_context_mgr = new ExternalScanContextMgr(this);
     _metrics = StarRocksMetrics::instance()->metrics();

@@ -1436,7 +1436,7 @@ CONF_mInt32(unused_crm_file_threshold_second, "86400" /** 1day **/);
 
 // python envs config
 // create time worker timeout
-CONF_mInt32(create_child_worker_timeout_ms, "1000");
+CONF_mInt32(create_child_worker_timeout_ms, "10000");
 // config ENV PYTHONPATH
 CONF_Strings(python_envs, "");
 // report python worker STDERR to client

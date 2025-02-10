@@ -73,11 +73,20 @@ private:
 
 Status ArrowFlightWithRW::init(const std::string& uri_string, const PyFunctionDescriptor& func_desc,
                                std::shared_ptr<PyWorker> process) {
+
+    LOG(INFO) << "zhangmao = " << __func__ << ", uri_string = " << uri_string;
     using namespace arrow::flight;
     ARROW_ASSIGN_OR_RETURN(auto location, Location::Parse(uri_string));
+    // Log the location information
+    LOG(INFO) << "zhangmao = " << __func__ << ", location = " << location.ToString();
+
     ARROW_ASSIGN_OR_RETURN(_arrow_client, ArrowFlightClient::Connect(location));
     ASSIGN_OR_RETURN(auto command, func_desc.to_json_string());
+    LOG(INFO) << "zhangmao = " << __func__ << ", command = " << command;
+
     FlightDescriptor descriptor = FlightDescriptor::Command(command);
+    LOG(INFO) << "zhangmao = " << __func__ << ", descriptor = " << descriptor.ToString();
+
     ARROW_ASSIGN_OR_RETURN(auto result, _arrow_client->DoExchange(descriptor));
     _reader = std::move(result.reader);
     _writer = std::move(result.writer);
@@ -86,6 +95,8 @@ Status ArrowFlightWithRW::init(const std::string& uri_string, const PyFunctionDe
 }
 
 StatusOr<std::shared_ptr<arrow::RecordBatch>> ArrowFlightWithRW::rpc(arrow::RecordBatch& batch) {
+    LOG(INFO) << "zhangmao = " << __func__ << ", _begin = " << _begin;
+    // lambda 表达式
     auto do_rpc = [this](arrow::RecordBatch& batch) -> StatusOr<std::shared_ptr<arrow::RecordBatch>> {
         if (!_begin) {
             RETURN_IF_ARROW_ERROR(_writer->Begin(batch.schema()));
@@ -112,6 +123,7 @@ void ArrowFlightWithRW::close() {
 
 StatusOr<std::shared_ptr<arrow::RecordBatch>> ArrowFlightFuncCallStub::do_evaluate(RecordBatch&& batch) {
     size_t num_rows = batch.num_rows();
+    LOG(INFO) << "zhangmao = ArrowFlightFuncCallStub::do_evaluate" << ", num_rows = " << num_rows;
     ASSIGN_OR_RETURN(auto result_batch, _client->rpc(batch));
     if (result_batch->num_rows() != num_rows) {
         return Status::InternalError(
@@ -121,11 +133,14 @@ StatusOr<std::shared_ptr<arrow::RecordBatch>> ArrowFlightFuncCallStub::do_evalua
 }
 
 auto PyWorkerManager::get_client(const PyFunctionDescriptor& func_desc) -> StatusOr<WorkerClientPtr> {
+    LOG(INFO) << "zhangmao = " << __func__ << ", PyFunctionDescriptor : { content = " << func_desc.content << ", symbol = "
+        << func_desc.symbol << ", driver_id = " << func_desc.driver_id << " }";
     std::shared_ptr<PyWorker> handle;
     std::string url;
     ASSIGN_OR_RETURN(handle, _acquire_worker(func_desc.driver_id, config::python_worker_reuse, &url));
     auto arrow_client = std::make_unique<ArrowFlightWithRW>();
     RETURN_IF_ERROR(arrow_client->init(url, func_desc, std::move(handle)));
+    LOG(INFO) << "zhangmao = " << __func__ << ", url = " << url;
     return arrow_client;
 }
 
@@ -145,7 +160,7 @@ StatusOr<std::string> PyFunctionDescriptor::to_json_string() const {
     rapidjson::Document doc;
     doc.SetObject();
     auto& allocator = doc.GetAllocator();
-
+    LOG(INFO) << "zhangmao = PyFunctionDescriptor::to_json_string()" << ", location.c_str() = " << location.c_str();
     // Adding basic string properties
     doc.AddMember("symbol", rapidjson::Value().SetString(symbol.c_str(), allocator), allocator);
     doc.AddMember("location", rapidjson::Value().SetString(location.c_str(), allocator), allocator);
@@ -177,6 +192,7 @@ StatusOr<std::string> PyFunctionDescriptor::to_json_string() const {
 }
 
 std::unique_ptr<UDFCallStub> build_py_call_stub(FunctionContext* context, const PyFunctionDescriptor& func_desc) {
+    LOG(INFO) << "zhangmao = " << __func__ ;
     auto& instance = PyWorkerManager::getInstance();
     auto worker_with_st = instance.get_client(func_desc);
     if (!worker_with_st.ok()) {

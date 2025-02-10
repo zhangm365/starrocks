@@ -90,6 +90,8 @@ Status PyWorkerManager::_fork_py_worker(std::unique_ptr<PyWorker>* child_process
     ASSIGN_OR_RETURN(auto py_env, PythonEnvManager::getInstance().getDefault());
 
     std::string python_path = py_env.get_python_path();
+    LOG(INFO) << "zhangmao = " << __func__  << ", python_path = " << python_path;
+
     int pipefd[2];
 
     if (pipe(pipefd) == -1) {
@@ -112,7 +114,8 @@ Status PyWorkerManager::_fork_py_worker(std::unique_ptr<PyWorker>* child_process
         }
         // run child process
         // close all resource
-        std::unordered_set<int> reserved_fd{0, 1, 2, pipefd[0]};
+//        std::unordered_set<int> reserved_fd{0, 1, 2, pipefd[0]};
+        std::unordered_set<int> reserved_fd{0, 1, 2};
         auto status = close_all_fd_except(reserved_fd);
         if (!status.ok()) {
             std::cout << "close fd failed:" << status.to_string() << std::endl;
@@ -127,6 +130,7 @@ Status PyWorkerManager::_fork_py_worker(std::unique_ptr<PyWorker>* child_process
         std::string python_home_env = fmt::format("PYTHONHOME={}", py_env.home);
         char* const args[] = {command, script.data(), unix_socket.data(), nullptr};
         char* const envs[] = {python_home_env.data(), nullptr};
+        LOG(INFO) << "zhangmao = " << __func__  << ", args[] = " << args << ", envs[] = " << envs;
         // exec flight server
         if (execvpe(python_path.c_str(), args, envs)) {
             std::cout << "execvp failed:" << std::strerror(errno) << std::endl;
@@ -161,6 +165,9 @@ Status PyWorkerManager::_fork_py_worker(std::unique_ptr<PyWorker>* child_process
             if (n == 0 || n == -1) break;
             buffer_size = buffer_size - n;
         }
+
+        LOG(INFO) << "zhangmao = " << __func__ << ", [sizeof(buffer) - buffer_size] = " << sizeof(buffer) - buffer_size;
+
         Slice result(buffer, sizeof(buffer) - buffer_size);
         if (result != Slice("Pywork start success\n")) {
             (*child_process)->terminate_and_wait();
@@ -196,7 +203,7 @@ StatusOr<std::shared_ptr<PyWorker>> PyWorkerManager::_acquire_worker(int32_t dri
         worker->touch();
         return worker;
     }
-
+    LOG(INFO) << "zhangmao = " << __func__ ;
     std::unique_ptr<PyWorker> uniq_worker;
     RETURN_IF_ERROR(_fork_py_worker(&uniq_worker));
     *url = uniq_worker->url();

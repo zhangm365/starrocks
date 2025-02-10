@@ -39,7 +39,7 @@ struct SchemaNameGenerator {
 StatusOr<ColumnPtr> AbstractArrowFuncCallStub::evaluate(const Columns& columns, size_t row_num) {
     // convert to columns to arrow record batch
     DCHECK_EQ(_func_ctx->get_num_args(), columns.size());
-
+    LOG(INFO) << "zhangmao = " << __func__  << ", columns.size() = " << columns.size() << ", row_num = " << row_num;
     // build input schema
     SchemaNameGenerator name_generator;
     arrow::SchemaBuilder schema_builder;

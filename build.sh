@@ -63,6 +63,8 @@ fi
 set -eo pipefail
 . ${STARROCKS_HOME}/env.sh
 
+export STARROCKS_THIRDPARTY=${STARROCKS_HOME}/thirdparty
+
 if [[ $OSTYPE == darwin* ]] ; then
     PARALLEL=$(sysctl -n hw.ncpu)
     # We know for sure that build-thirdparty.sh will fail on darwin platform, so just skip the step.

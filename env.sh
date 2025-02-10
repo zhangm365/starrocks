@@ -16,6 +16,9 @@
 # under the License.
 
 # check STARROCKS_HOME
+
+# export STARROCKS_HOME=/home/root/zfrFiles/JointLab/starrocks
+
 if [[ -z ${STARROCKS_HOME} ]]; then
     echo "Error: STARROCKS_HOME is not set"
     exit 1

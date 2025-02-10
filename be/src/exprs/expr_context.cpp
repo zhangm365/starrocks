@@ -91,6 +91,8 @@ Status ExprContext::open(RuntimeState* state) {
 }
 
 Status ExprContext::open(std::vector<ExprContext*> evals, RuntimeState* state) {
+
+    LOG(INFO) << "zhangmao = " << __func__ ;
     for (auto& eval : evals) {
         RETURN_IF_ERROR(eval->open(state));
     }
@@ -185,6 +187,7 @@ StatusOr<ColumnPtr> ExprContext::evaluate(Expr* e, Chunk* chunk, uint8_t* filter
     try {
         ColumnPtr ptr = nullptr;
         if (filter == nullptr) {
+            LOG(INFO) << "zhangmao = " << __func__  << ", e = " << e->_fn ;
             ASSIGN_OR_RETURN(ptr, e->evaluate_checked(this, chunk));
         } else {
             ASSIGN_OR_RETURN(ptr, e->evaluate_with_filter(this, chunk, filter));

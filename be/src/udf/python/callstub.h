@@ -40,7 +40,14 @@ struct PyEnvDescriptor {
     bool isolated;
 };
 
-struct PyFunctionDescriptor {
+class PyFunctionDescriptor {
+public:
+    PyFunctionDescriptor(int32_t _driver_id, const std::string& _symbol, const std::string& _location,
+                         const std::string& _content, const std::string& _input_type, TypeDescriptor _return_type,
+                         const std::vector<TypeDescriptor>& _input_types) :
+        driver_id(_driver_id), symbol(_symbol), location(_location), content(_content),
+        input_type(_input_type), return_type(_return_type), input_types(_input_types) {};
+
     // used for reuse python env
     int32_t driver_id;
     std::string symbol;
@@ -49,6 +56,7 @@ struct PyFunctionDescriptor {
     std::string input_type;
     TypeDescriptor return_type;
     std::vector<TypeDescriptor> input_types;
+
     StatusOr<std::string> to_json_string() const;
 };
 

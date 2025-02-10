@@ -273,7 +273,8 @@ StatusOr<DriverState> PipelineDriver::process(RuntimeState* runtime_state, int w
 
         SCOPED_RAW_TIMER(&process_time_ns);
         auto query_mem_tracker = _query_ctx->mem_tracker();
-
+        
+        LOG(INFO) << "zhangmao, _first_unfinished = " << _first_unfinished << ", num_operators = " << num_operators;
         for (size_t i = _first_unfinished; i < num_operators - 1; ++i) {
             {
                 SCOPED_RAW_TIMER(&time_spent);
@@ -312,6 +313,7 @@ StatusOr<DriverState> PipelineDriver::process(RuntimeState* runtime_state, int w
                 // operator
                 StatusOr<ChunkPtr> maybe_chunk;
                 {
+                    LOG(INFO) << "zhangmao, curr_op = " << curr_op->get_name();
                     SCOPED_TIMER(curr_op->_pull_timer);
                     QUERY_TRACE_SCOPED(curr_op->get_name(), "pull_chunk");
                     maybe_chunk = curr_op->pull_chunk(runtime_state);
@@ -344,6 +346,7 @@ StatusOr<DriverState> PipelineDriver::process(RuntimeState* runtime_state, int w
 
                         total_rows_moved += row_num;
                         {
+                            LOG(INFO) << "zhangmao = " << __func__  << ", next_op = " << next_op->get_name();
                             SCOPED_TIMER(next_op->_push_timer);
                             QUERY_TRACE_SCOPED(next_op->get_name(), "push_chunk");
                             _adjust_memory_usage(runtime_state, query_mem_tracker.get(), next_op, maybe_chunk.value());

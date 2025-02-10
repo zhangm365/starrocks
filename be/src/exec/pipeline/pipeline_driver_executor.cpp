@@ -153,6 +153,7 @@ void GlobalDriverExecutor::_worker_thread() {
 #ifdef NDEBUG
             TRY_CATCH_ALL(maybe_state, driver->process(runtime_state, worker_id));
 #else
+            LOG(INFO) << "zhangmao = " << __func__;
             maybe_state = driver->process(runtime_state, worker_id);
 #endif
             if (current_thread != nullptr) {

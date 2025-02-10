@@ -45,6 +45,7 @@ Status ProjectOperator::push_chunk(RuntimeState* state, const ChunkPtr& chunk) {
     }
     TRY_CATCH_ALLOC_SCOPE_START();
     {
+        LOG(INFO) << "zhangmao = " << __func__ ;
         SCOPED_TIMER(_common_sub_expr_compute_timer);
         for (size_t i = 0; i < _common_sub_column_ids.size(); ++i) {
             ASSIGN_OR_RETURN(auto col, _common_sub_expr_ctxs[i]->evaluate(chunk.get()));
