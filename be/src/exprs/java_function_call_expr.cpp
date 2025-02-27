@@ -141,7 +141,8 @@ StatusOr<ColumnPtr> JavaFunctionCallExpr::evaluate_checked(ExprContext* context,
         return Status::OK();
     };
     (void)call_function_in_pthread(_runtime_state, call_udf)->get_future().get();
-    std::string debug_info = res.get()->debug_string();
+
+    std::string debug_info = res->get()->debug_string();
     LOG(INFO) << "After Column res debug string: " << debug_info;
     return res;
 }

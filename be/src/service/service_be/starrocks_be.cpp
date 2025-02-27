@@ -203,8 +203,8 @@ void start_be(const std::vector<StorePath>& paths, bool as_cn) {
 
     auto* storage_engine = init_storage_engine(global_env, paths, as_cn);
     LOG(INFO) << process_name << " start step " << start_step++ << ": storage engine init successfully";
-    
-    LOG(INFO) << "zhangmao = " << __func__ << ", after init_storage_engine(), and before ExecEnv::GetInstance()->init";
+
+    LOG(INFO) << "zhangmao = " << __PRETTY_FUNCTION__ << " starting the exec engine by the func [ExecEnv::GetInstance()->init]";
 
     auto* exec_env = ExecEnv::GetInstance();
     EXIT_IF_ERROR(exec_env->init(paths, as_cn));
