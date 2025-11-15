@@ -48,6 +48,11 @@ usage() {
     echo ""
     echo "Environment Variables:"
     echo "  STARROCKS_THIRDPARTY    Third-party directory (default: $THIRDPARTY_DIR)"
+    echo ""
+    echo "To clean a specific library (e.g., brpc):"
+    echo "  rm -rf ../thirdparty/build/brpc && ./$(basename "$0")"
+    echo ""
+    echo "For more information, see README.md or README_zh_CN.md"
 }
 
 # Parse command line arguments
